@@ -28,8 +28,17 @@ export class RoomAlertService {
     sensorName?: string
   ): Promise<RoomAlertData | null> {
     try {
-      // Room Alert public API endpoint using device UUID
-      const url = `${ROOM_ALERT_BASE_URL}/public/device/${deviceId}`;
+      // Use API route on production to avoid CORS issues, direct fetch on development
+      const isProduction = import.meta.env.PROD;
+      let url: string;
+      
+      if (isProduction) {
+        // Use Vercel API route as CORS proxy
+        url = `/api/room-alert?deviceId=${encodeURIComponent(deviceId)}`;
+      } else {
+        // Direct fetch on development
+        url = `https://account.roomalert.com/public/device/${deviceId}`;
+      }
       
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
@@ -37,7 +46,9 @@ export class RoomAlertService {
       };
 
       const response = await fetch(url, { 
-        headers
+        headers,
+        mode: 'cors',
+        credentials: 'omit'
       });
       
       if (!response.ok) {
