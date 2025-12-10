@@ -1,4 +1,4 @@
-import { RoomAlertData, RoomAlertResponse } from '@/types';
+import { RoomAlertData } from '@/types';
 
 /**
  * Room Alert API Service
