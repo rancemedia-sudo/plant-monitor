@@ -15,8 +15,6 @@ import { RoomAlertData } from '@/types';
  * 4. Configure in the app or environment variables
  */
 
-const ROOM_ALERT_BASE_URL = import.meta.env.VITE_ROOM_ALERT_BASE_URL || 'https://account.roomalert.com';
-
 export class RoomAlertService {
   /**
    * Fetch current sensor data from Room Alert device
@@ -28,12 +26,14 @@ export class RoomAlertService {
     sensorName?: string
   ): Promise<RoomAlertData | null> {
     try {
-      // Use API route on production to avoid CORS issues, direct fetch on development
-      const isProduction = import.meta.env.PROD;
+      // Check if we're in development mode
+      // On production, use API route; on dev, direct fetch
+      const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+      const isProduction = !currentUrl.includes('localhost') && !currentUrl.includes('127.0.0.1');
       let url: string;
       
       if (isProduction) {
-        // Use Vercel API route as CORS proxy
+        // Use Vercel API route as CORS proxy on production
         url = `/api/room-alert?deviceId=${encodeURIComponent(deviceId)}`;
       } else {
         // Direct fetch on development
@@ -139,7 +139,8 @@ export class RoomAlertService {
     callback: (data: RoomAlertData | null) => void,
     intervalMs: number = 30000
   ): () => void {
-    const useMockData = import.meta.env.VITE_USE_MOCK_ROOM_ALERT === 'true';
+    // Default to using mock data for safety
+    const useMockData = true;
     
     // Initial fetch
     const fetchData = async () => {
