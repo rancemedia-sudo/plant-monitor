@@ -82,7 +82,7 @@ export class RoomAlertService {
       }
 
       if (temperature === null || humidity === null) {
-        console.warn(`Temperature or humidity sensor not found for device ${macAddress}`, data);
+        console.warn(`Temperature or humidity sensor not found for device ${deviceId}`, data);
         return null;
       }
 
@@ -144,8 +144,8 @@ export class RoomAlertService {
     // Initial fetch
     const fetchData = async () => {
       const data = useMockData 
-        ? await this.fetchMockSensorData(macAddress, sensorName)
-        : await this.fetchSensorData(macAddress, sensorName);
+        ? await this.fetchMockSensorData(deviceId, sensorName)
+        : await this.fetchSensorData(deviceId, sensorName);
       callback(data);
     };
 
