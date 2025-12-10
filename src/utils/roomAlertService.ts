@@ -7,19 +7,20 @@ import { RoomAlertData } from '@/types';
  * temperature and humidity data for your gardens.
  * 
  * Setup Instructions:
- * 1. Log into your Room Alert account at https://www.avtech.com
- * 2. Find your device ID in the device settings
- * 3. Generate an API key if required (depends on your Room Alert model)
- * 4. Create a .env file with your credentials
+ * 1. Get your public device link from https://account.roomalert.com
+ * 2. Extract the UUID from the URL
+ *    Example URL: https://account.roomalert.com/public/device/112f34ac-76a1-421b-8dc1-89c619eb5d1a
+ *    Device ID: 112f34ac-76a1-421b-8dc1-89c619eb5d1a
+ * 3. No API key required for public devices
+ * 4. Configure in the app or environment variables
  */
 
-const ROOM_ALERT_BASE_URL = import.meta.env.VITE_ROOM_ALERT_BASE_URL || '/api/roomalert';
-const ROOM_ALERT_API_KEY = import.meta.env.VITE_ROOM_ALERT_API_KEY;
+const ROOM_ALERT_BASE_URL = import.meta.env.VITE_ROOM_ALERT_BASE_URL || 'https://account.roomalert.com';
 
 export class RoomAlertService {
   /**
    * Fetch current sensor data from Room Alert device
-   * @param deviceId - Your Room Alert device ID (UUID format)
+   * @param deviceId - Your Room Alert device UUID (from public link)
    * @param sensorName - Optional: specific sensor name to filter
    */
   static async fetchSensorData(
@@ -27,19 +28,13 @@ export class RoomAlertService {
     sensorName?: string
   ): Promise<RoomAlertData | null> {
     try {
-      // Room Alert public API endpoint through Vite proxy
-      // This bypasses CORS by routing through the dev server
+      // Room Alert public API endpoint using device UUID
       const url = `${ROOM_ALERT_BASE_URL}/public/device/${deviceId}`;
       
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       };
-
-      // Add API key if configured (usually not needed for public endpoints)
-      if (ROOM_ALERT_API_KEY) {
-        headers['Authorization'] = `Bearer ${ROOM_ALERT_API_KEY}`;
-      }
 
       const response = await fetch(url, { 
         headers
@@ -76,7 +71,7 @@ export class RoomAlertService {
       }
 
       if (temperature === null || humidity === null) {
-        console.error('Temperature or humidity sensor not found in Room Alert data', data);
+        console.warn(`Temperature or humidity sensor not found for device ${macAddress}`, data);
         return null;
       }
 
@@ -85,7 +80,7 @@ export class RoomAlertService {
         humidity,
         timestamp: new Date(data.timestamp || data.last_updated || Date.now()),
         deviceId: deviceId,
-        sensorName: sensorName || data.name || 'Room Alert 12S'
+        sensorName: sensorName || data.name || 'Room Alert Device'
       };
     } catch (error) {
       console.error('Error fetching Room Alert data:', error);
@@ -121,7 +116,7 @@ export class RoomAlertService {
 
   /**
    * Start polling for sensor data at regular intervals
-   * @param deviceId - Your Room Alert device ID
+   * @param deviceId - Your Room Alert device UUID
    * @param sensorName - Optional: specific sensor name
    * @param callback - Function to call with updated data
    * @param intervalMs - Polling interval in milliseconds (default: 30 seconds)
@@ -138,8 +133,8 @@ export class RoomAlertService {
     // Initial fetch
     const fetchData = async () => {
       const data = useMockData 
-        ? await this.fetchMockSensorData(deviceId, sensorName)
-        : await this.fetchSensorData(deviceId, sensorName);
+        ? await this.fetchMockSensorData(macAddress, sensorName)
+        : await this.fetchSensorData(macAddress, sensorName);
       callback(data);
     };
 
